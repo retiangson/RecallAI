@@ -24,64 +24,56 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [notes, setNotes] = useState<any[]>([]);
+  const [showNotes, setShowNotes] = useState(true);
+  const [showConversations, setShowConversations] = useState(true);
+
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
+  /* Auto-scroll */
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeConversation?.messages, loading]);
 
+  /* Load conversations */
   useEffect(() => {
     async function load() {
-      try {
-        const conv = await getConversations(user.id);
+      const conv = await getConversations(user.id);
 
-        if (Array.isArray(conv) && conv.length > 0) {
-          const normalized = conv.map((c: any) => ({
-            id: c.id,
-            title: c.title ?? null,
-            messages: Array.isArray(c.messages) ? c.messages : [],
-          }));
-          setConversations(normalized);
-          setActiveConversation(normalized[0]);
-        } else {
-          const created = await createConversation(user.id);
-          const newConv = {
-            id: created.id,
-            title: created.title ?? null,
-            messages: [],
-          };
-          setConversations([newConv]);
-          setActiveConversation(newConv);
-        }
-      } catch (err) {
-        console.error("Conversation loading failed:", err);
+      if (Array.isArray(conv) && conv.length > 0) {
+        const mapped = conv.map((c: any) => ({
+          id: c.id,
+          title: c.title ?? null,
+          messages: Array.isArray(c.messages) ? c.messages : [],
+        }));
+
+        setConversations(mapped);
+        setActiveConversation(mapped[0]);
+      } else {
+        const created = await createConversation(user.id);
+        const newConv: Conversation = {
+          id: created.id,
+          title: created.title ?? null,
+          messages: [],
+        };
+        setConversations([newConv]);
+        setActiveConversation(newConv);
       }
     }
-
     load();
   }, [user.id]);
 
-  if (!activeConversation) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[#121212] text-gray-300">
-        Loading conversations...
-      </div>
-    );
-  }
-
   async function handleNewConversation() {
-    try {
-      const created = await createConversation(user.id);
-      const newConv = {
-        id: created.id,
-        title: created.title ?? null,
-        messages: [],
-      };
-      setConversations((prev) => [newConv, ...prev]);
-      setActiveConversation(newConv);
-    } catch (err) {
-      console.error("Failed to create conversation:", err);
-    }
+    const created = await createConversation(user.id);
+    const newConv: Conversation = {
+      id: created.id,
+      title: created.title ?? null,
+      messages: [],
+    };
+    setConversations((prev) => [newConv, ...prev]);
+    setActiveConversation(newConv);
   }
 
   async function handleSend() {
@@ -90,11 +82,11 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
     const text = input.trim();
     setInput("");
 
-    const userMsg: Message = { role: "user", content: text };
+    const newUserMsg: Message = { role: "user", content: text };
 
     const tempConv = {
       ...activeConversation,
-      messages: [...activeConversation.messages, userMsg],
+      messages: [...activeConversation.messages, newUserMsg],
     };
 
     setActiveConversation(tempConv);
@@ -105,20 +97,18 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
     setLoading(true);
 
     try {
-      const response = await sendChat(activeConversation.id, text);
-      const aiMsg: Message = { role: "assistant", content: response.answer };
+      const res = await sendChat(activeConversation.id, text);
+      const aiMsg: Message = { role: "assistant", content: res.answer };
 
-      const finalConv = {
+      const updated = {
         ...tempConv,
         messages: [...tempConv.messages, aiMsg],
       };
 
-      setActiveConversation(finalConv);
+      setActiveConversation(updated);
       setConversations((prev) =>
-        prev.map((c) => (c.id === finalConv.id ? finalConv : c))
+        prev.map((c) => (c.id === updated.id ? updated : c))
       );
-    } catch (err) {
-      console.error("Chat failed:", err);
     } finally {
       setLoading(false);
     }
@@ -131,68 +121,149 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
     }
   }
 
+  if (!activeConversation) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-[#121212] text-gray-300">
+        Loading conversations...
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-screen bg-[#2a2a2a] text-gray-100 overflow-hidden">
+    <div className="h-screen w-screen bg-[#2A2A2A] text-gray-100 flex relative">
+      {/* SIDEBAR TOGGLE WHEN HIDDEN */}
+      {!sidebarOpen && (
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="absolute top-4 left-4 z-20 bg-[#2F3033] 
+                     text-gray-200 px-3 py-2 rounded-lg hover:bg-[#3A3B3F] transition"
+        >
+          ☰
+        </button>
+      )}
 
       {/* SIDEBAR */}
-      <aside className="w-72 bg-[#202123] border-r border-[#2A2A2A] flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-[#2A2A2A]">
-          <UploadNotes />
-        </div>
-
-        <div className="p-3 border-b border-[#2A2A2A]">
-          <button
-            onClick={handleNewConversation}
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2 rounded text-sm"
-          >
-            + New Chat
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-2 space-y-2 text-sm">
-          {conversations.map((conv) => (
-            <div
-              key={conv.id}
-              className={`p-3 rounded cursor-pointer transition ${
-                activeConversation.id === conv.id
-                  ? "bg-[#2F2F2F] text-white"
-                  : "bg-[#1E1E1E] text-gray-400 hover:bg-[#2F2F2F] hover:text-white"
-              }`}
-              onClick={() => setActiveConversation(conv)}
+      {sidebarOpen && (
+        <aside className="w-[320px] h-full bg-[#1E1F22] border-r border-[#2C2D2F] flex flex-col">
+          {/* Sidebar Header */}
+          <div className="p-4 border-b border-[#2A2A2A] flex justify-between items-center">
+            <h2 className="text-sm font-semibold text-[#E5E7EB]">RecallAI</h2>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="text-gray-400 hover:text-gray-200"
             >
-              {conv.title || `Conversation ${conv.id}`}
-            </div>
-          ))}
-        </div>
-      </aside>
+              ✕
+            </button>
+          </div>
 
-      {/* MAIN CHAT COLUMN */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+          {/* Upload Section */}
+          <div className="p-4 border-b border-[#2A2A2A]">
+            <UploadNotes setNotes={setNotes} />
+          </div>
 
+          {/* Notes Section */}
+          <div className="border-b border-[#2A2A2A]">
+            <button
+              onClick={() => setShowNotes(!showNotes)}
+              className="w-full px-4 py-3 flex justify-between items-center bg-[#2A2C2F] text-[#E5E7EB] text-sm hover:bg-[#2A2C2F] transition"
+            >
+              <span>Notes</span>
+              <span className="text-gray-400">{showNotes ? "▾" : "▸"}</span>
+            </button>
+
+            {showNotes && (
+              <div className="px-4 py-2 max-h-56 overflow-y-auto space-y-2">
+                {notes.length === 0 && (
+                  <p className="text-xs text-gray-500">
+                    No notes uploaded yet
+                  </p>
+                )}
+
+                {notes.map((note) => (
+                  <div
+                    key={note.id}
+                    className="p-3 rounded bg-[#1E1E1E] text-gray-300 border border-[#333]"
+                  >
+                    {note.title}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Messages Section */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <button
+              onClick={() => setShowConversations(!showConversations)}
+              className="w-full px-4 py-3 flex justify-between items-center bg-[#2A2C2F] text-[#E5E7EB] text-sm hover:bg-[#2A2C2F] transition border-b border-[#2C2D2F]"
+            >
+              <span className="font-medium">Messages</span>
+              <span className="text-gray-400">
+                {showConversations ? "▾" : "▸"}
+              </span>
+            </button>
+
+            {showConversations && (
+              <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                <button
+                  onClick={handleNewConversation}
+                  className="w-full bg-green-300 text-green-900 py-2 rounded-full text-sm font-medium hover:bg-green-400 transition shadow-sm"
+                >
+                  + New Chat
+                </button>
+
+                {conversations.map((conv) => (
+                  <div
+                    key={conv.id}
+                    onClick={() => setActiveConversation(conv)}
+                    className={`p-3 rounded cursor-pointer transition
+                      ${
+                        activeConversation.id === conv.id
+                          ? "bg-[#2A2C2F] text-white py-2 rounded-full shadow-sm"
+                          : "bg-[#1E1F22] text-gray-400 hover:bg-[#2A2C2F] hover:text-white py-2 rounded-full shadow-sm"
+                      }
+                    `}
+                  >
+                    {conv.title || `Conversation ${conv.id}`}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </aside>
+      )}
+
+      {/* RIGHT SIDE: HEADER + CONTENT + FOOTER */}
+      <div className="flex-1 flex flex-col h-full">
         {/* HEADER */}
-        <div className="p-4 border-b border-[#2A2A2A] bg-[#202123] text-sm flex justify-between">
-          <div>{activeConversation.title || "Conversation"}</div>
+        <header className="h-16 flex items-center justify-between px-6 bg-[#202123] border-b border-[#2C2D2F] shadow-md">
+          <div className="flex items-center gap-4">
+            <span className="text-lg font-semibold text-white">RecallAI</span>
+            <span className="text-sm text-gray-300 opacity-80">
+              {activeConversation.title || "Conversation"}
+            </span>
+          </div>
           <div className="text-xs text-gray-400">Logged in as {user.email}</div>
-        </div>
+        </header>
 
-        {/* MESSAGES */}
-        <div className="flex-1 overflow-y-auto px-5 py-6">
+        {/* MESSAGES (SCROLLABLE MIDDLE) */}
+        <main className="flex-1 overflow-y-auto px-5 py-6">
           <div className="max-w-[740px] mx-auto flex flex-col gap-4">
-
             {activeConversation.messages.map((msg, idx) => (
               <ChatBubble key={idx} role={msg.role} content={msg.content} />
             ))}
 
-            {loading && <ChatBubble role="assistant" content="⏳ Thinking..." />}
+            {loading && (
+              <ChatBubble role="assistant" content="⏳ Thinking..." />
+            )}
 
             <div ref={bottomRef} />
           </div>
-        </div>
+        </main>
 
-        {/* INPUT BAR */}
-        <div className="p-4 border-t border-[#2A2A2A] bg-[#202123]">
+        {/* FOOTER / INPUT BAR */}
+        <footer className="border-t border-[#2C2D2F] bg-[#202123] p-4">
           <div className="max-w-[740px] mx-auto flex gap-3 w-full">
-
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -212,14 +283,16 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
             <button
               onClick={handleSend}
               disabled={loading || !input.trim()}
-              className="px-6 py-3 rounded-3xl bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700"
+              className="
+                px-6 py-3 rounded-3xl
+                bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700
+              "
             >
               Send
             </button>
-
           </div>
-        </div>
-      </main>
+        </footer>
+      </div>
     </div>
   );
 }

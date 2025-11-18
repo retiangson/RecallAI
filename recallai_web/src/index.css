@@ -1,14 +1,43 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-/* Global font fix */
-body {
-  font-family: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-  background-color: #0d0d0d;
-  color: #f0f0f0;
+
+/* Reset */
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
-/* Make sure all content uses this font */
-* {
-  font-family: inherit;
+/* THIS IS THE FIX:
+   do NOT hide overflow at html/body level */
+body {
+  overflow: hidden;
+  font-family: "Inter", sans-serif;
+  background-color: #0d0d0d;
+  color: #eee;
+}
+
+/* Ensure root spans the full viewport */
+#root {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  overflow: hidden;
+}
+
+/* The main shell wrapping the app */
+.app-shell {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Chat content scroll area */
+.chat-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
 }

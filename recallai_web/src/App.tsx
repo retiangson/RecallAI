@@ -11,8 +11,16 @@ export default function App() {
   }
 
   if (!user) {
-    return <LoginPage onLogin={refreshUser} />;
+    return (
+      <div className="app-shell">
+        <LoginPage onLogin={refreshUser} />
+      </div>
+    );
   }
 
-  return <ChatPage user={user} />;
+  return (
+    <div className="app-shell">
+      <ChatPage user={user} />
+    </div>
+  );
 }

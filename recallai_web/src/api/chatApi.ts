@@ -1,24 +1,47 @@
 import axios from "axios";
 
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
+// Normalize base URL, remove any trailing slash
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/api/v1")
+  .replace(/\/+$/, "");
 
-export async function sendChat(conversationId: number | null, question: string) {
-  const response = await axios.post(`${API_BASE}/chat`, {
-    conversation_id: conversationId,
+// Reusable axios client
+export const api = axios.create({
+  baseURL: API_BASE,
+});
+
+// ------------------------------
+// SEND CHAT MESSAGE
+// ------------------------------
+export async function sendChat(
+  conversation_id: number,
+  question: string,
+  top_k: number = 5
+) {
+  const response = await api.post("/chat", {
+    conversation_id,
     question,
+    top_k,
   });
 
-  return response.data;
+  return response.data; // ChatResponseDTO
 }
 
-export async function uploadNotes(files: File[]) {
+// ------------------------------
+// UPLOAD NOTES (txt + zip)
+// ------------------------------
+// ✔ FIXED: user_id MUST be in the query string
+// ✔ FIXED: DO NOT send user_id inside FormData
+export async function uploadNotes(files: File[], user_id: number) {
   const formData = new FormData();
-  files.forEach((f) => formData.append("files", f));
 
-  const response = await axios.post(`${API_BASE}/notes/bulk`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
+  files.forEach((file) => formData.append("files", file));
+
+  // ❗ FastAPI REQUIRES user_id in query params, NOT formData
+  const response = await api.post(`/notes/bulk?user_id=${user_id}`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
   });
 
-  return response.data;
+  return response.data; // List<NoteResponseDTO>
 }

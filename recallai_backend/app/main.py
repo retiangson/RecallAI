@@ -19,7 +19,7 @@ print("DEBUG: cwd =", os.getcwd())
 # IMPORTS (after sys.path fix)
 # -------------------------------------
 from app.core.db import Base, engine
-from app.api.v1 import notes_controller, chat_controller, bulk_controller
+from app.api.v1 import notes_controller, chat_controller, bulk_controller, auth_controller, conversation_controller 
 
 # -------------------------------------
 # CREATE APP
@@ -45,6 +45,8 @@ Base.metadata.create_all(bind=engine)
 # -------------------------------------
 # ROUTERS
 # -------------------------------------
+app.include_router(auth_controller.router, prefix="/api/v1")
 app.include_router(notes_controller.router, prefix="/api/v1")
 app.include_router(chat_controller.router, prefix="/api/v1")
 app.include_router(bulk_controller.router, prefix="/api/v1")
+app.include_router(conversation_controller.router, prefix="/api/v1")

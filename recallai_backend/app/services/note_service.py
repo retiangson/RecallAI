@@ -11,9 +11,12 @@ class NoteService:
         self.db = db
 
     def create_note(self, dto: NoteCreateDTO) -> NoteResponseDTO:
-        note = self.repo.create_note(dto.title, dto.content, dto.source)
+        note = self.repo.create_note(dto.user_id, dto.title, dto.content, dto.source)
+
         vector = self.embedding_service.embed_text(dto.content)
         self.repo.save_embedding(note.id, vector)
+
         self.db.commit()
         self.db.refresh(note)
+
         return NoteResponseDTO.model_validate(note)

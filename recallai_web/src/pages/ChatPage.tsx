@@ -1,5 +1,5 @@
 import React, { useEffect, useState, KeyboardEvent, useRef } from "react";
-import { sendChat } from "../api/chatApi";
+import { sendChat, uploadChat } from "../api/chatApi";
 import {
   listNotes,
   deleteNote,
@@ -354,6 +354,7 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
 
       // 2. Build user message content (include attachments label if any)
       let userContent = trimmed;
+      debugger;
       if (hasFiles) {
         const filesLabel = pendingFiles
           .map((f) => `📎 ${f.name}`)
@@ -379,18 +380,7 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
 
       // 3. Call backend
       if (hasFiles) {
-        const formData = new FormData();
-        formData.append("conversation_id", conversationId.toString());
-        formData.append("prompt", trimmed);
-
-        pendingFiles.forEach((file) => {
-          formData.append("files", file);
-        });
-
-        const res = await fetch("/chat/upload", {
-          method: "POST",
-          body: formData,
-        }).then((r) => r.json());
+        const res = await uploadChat(conversationId, trimmed, pendingFiles);
 
         const aiMsg: Message = {
           role: "assistant",

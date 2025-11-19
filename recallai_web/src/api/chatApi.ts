@@ -45,3 +45,27 @@ export async function uploadNotes(files: File[], user_id: number) {
 
   return response.data; // List<NoteResponseDTO>
 }
+
+export async function uploadChat(
+  conversationId: number,
+  prompt: string,
+  files: File[]
+) {
+  const formData = new FormData();
+
+  formData.append("conversation_id", conversationId.toString());
+  formData.append("prompt", prompt);
+
+  files.forEach((f) => {
+    formData.append("files", f, f.name);
+  });
+
+  // Correct Axios request
+  const res = await api.post(`/chat/upload`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  return res.data; // ChatResponseDTO
+}

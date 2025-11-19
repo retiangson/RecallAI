@@ -16,14 +16,14 @@ def ask(
     db: Session = Depends(get_db),
     emb = Depends(get_embedding_service),
 ):
-    service = ChatService(db, emb)
-    return service.ask(dto)
+        service = ChatService(db, emb)
+        return service.ask(dto)
 
 
 @router.post("/upload", response_model=ChatResponseDTO)
 async def chat_upload(
     conversation_id: int = Form(...),
-    message: str = Form(""),
+    prompt: str = Form(""),
     files: List[UploadFile] = File(...),
     db: Session = Depends(get_db),
     emb = Depends(get_embedding_service),
@@ -33,10 +33,10 @@ async def chat_upload(
 
     Frontend should send FormData like:
       formData.append("conversation_id", convId.toString());
-      formData.append("message", text);
+      formData.append("prompt", text);
       formData.append("files", file1);
       formData.append("files", file2);
       ...
     """
     service = ChatService(db, emb)
-    return await service.handle_file_upload(conversation_id, message, files)
+    return await service.handle_file_upload(conversation_id, prompt, files)

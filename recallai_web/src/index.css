@@ -1,7 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
+@import "tailwindcss";
 /* Reset */
 html, body {
   height: 100%;
@@ -40,4 +37,8 @@ body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+.markdown-body {
+  color: #E8E8E8 !important;
 }

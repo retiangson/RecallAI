@@ -24,7 +24,23 @@ export async function getConversationMessages(conversation_id: number) {
   const res = await axios.post(`${API_BASE}/conversation/messages`, {
     conversation_id,
   });
-  return res.data; // [{ role, content, created_at }]
+
+  let messages = res.data || [];
+
+  // Sort reliably
+  messages.sort((a: any, b: any) => {
+    // If ID exists, use it
+    if (a.id && b.id) return a.id - b.id;
+
+    // Otherwise sort by timestamp
+    if (a.created_at && b.created_at) {
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    }
+
+    return 0; // fallback
+  });
+
+  return messages;
 }
 
 // ⭐ Rename a conversation

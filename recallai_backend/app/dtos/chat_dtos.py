@@ -4,7 +4,7 @@ from typing import List, Optional
 
 class ChatRequestDTO(BaseModel):
     conversation_id: int | None = None
-    question: str
+    prompt: str
     top_k: int = 5
 
 
@@ -13,7 +13,13 @@ class ChatAnswerSource(BaseModel):
     title: Optional[str]
     snippet: str
 
+class ChatAttachmentDTO(BaseModel):
+    filename: str
+    content_type: Optional[str] = None
+    size: Optional[int] = None
 
 class ChatResponseDTO(BaseModel):
     answer: str
-    sources: List[ChatAnswerSource]
+    sources: List[ChatAnswerSource] = []
+    attachments: List[ChatAttachmentDTO] = []
+

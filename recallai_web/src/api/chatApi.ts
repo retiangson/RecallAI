@@ -14,12 +14,12 @@ export const api = axios.create({
 // ------------------------------
 export async function sendChat(
   conversation_id: number,
-  question: string,
+  prompt: string,
   top_k: number = 5
 ) {
   const response = await api.post("/chat", {
     conversation_id,
-    question,
+    prompt,
     top_k,
   });
 

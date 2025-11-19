@@ -1,4 +1,4 @@
-import { useEffect, useState, KeyboardEvent, useRef } from "react";
+import React, { useEffect, useState, KeyboardEvent, useRef } from "react";
 import { sendChat } from "../api/chatApi";
 import {
   listNotes,
@@ -32,12 +32,13 @@ interface Conversation {
 
 export function ChatPage({ user }: { user: { id: number; email: string } }) {
   const TEMP_CONVERSATION_ID = -1;
-
+  const attachmentInputRef = useRef<HTMLInputElement | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversation, setActiveConversation] =
     useState<Conversation | null>(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
   const [notes, setNotes] = useState<any[]>([]);
 
@@ -76,7 +77,14 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
     }
   }
 
-  // Open / load a note into right editor panel
+  function handleDropFile(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files || []);
+    if (!files.length) return;
+    setPendingFiles((prev) => [...prev, ...files]);
+  }
+
+ // Open / load a note into right editor panel
   async function openNoteEditor(note: any) {
     // always fetch the latest from backend
     const fresh = await getNote(note.id);
@@ -300,10 +308,14 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
     }, 0);
   }
 
+  
   async function handleSend() {
-    if (!input.trim()) return;
+    const trimmed = input.trim();
+    const hasText = trimmed.length > 0;
+    const hasFiles = pendingFiles.length > 0;
 
-    const text = input.trim();
+    if (!hasText && !hasFiles) return;
+
     setInput("");
     setLoading(true);
 
@@ -311,15 +323,18 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
       let conv = activeConversation;
       let conversationId: number;
 
-      // ───────────────────────────────────────────────
-      // 1. If this is a brand new conversation
-      // ───────────────────────────────────────────────
+      // 1. Ensure conversation exists
       if (!conv || conv.id === TEMP_CONVERSATION_ID) {
         const created = await createConversation(user.id);
         conversationId = created.id;
 
+        const titleSource =
+          trimmed || (pendingFiles[0]?.name ?? "New conversation");
+
         const titleFromFirstMessage =
-          text.length > 60 ? text.slice(0, 57) + "..." : text;
+          titleSource.length > 60
+            ? titleSource.slice(0, 57) + "..."
+            : titleSource;
 
         await renameConversation(conversationId, titleFromFirstMessage);
 
@@ -331,60 +346,91 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
 
         conv = newConv;
 
-        // Insert new conversation at top
         setConversations((prev) => [newConv, ...prev]);
-
-        // Set as active
         setActiveConversation(newConv);
       } else {
-        // Existing conversation
         conversationId = conv.id;
       }
 
-      // ───────────────────────────────────────────────
-      // 2. Add user message
-      // ───────────────────────────────────────────────
-      const userMsg: Message = { role: "user", content: text };
+      // 2. Build user message content (include attachments label if any)
+      let userContent = trimmed;
+      if (hasFiles) {
+        const filesLabel = pendingFiles
+          .map((f) => `📎 ${f.name}`)
+          .join("\n");
+        userContent = trimmed ? `${filesLabel}\n\n${trimmed}` : filesLabel;
+      }
+
+      const userMsg: Message = {
+        role: "user",
+        content: userContent || "",
+      };
 
       let updated: Conversation = {
         ...conv,
         messages: [...conv.messages, userMsg],
       };
 
-      // Update active conversation
       setActiveConversation(updated);
-
-      // Move updated conversation to top
       setConversations((prev) => {
         const filtered = prev.filter((c) => c.id !== updated.id);
         return [updated, ...filtered];
       });
 
-      // ───────────────────────────────────────────────
-      // 3. Send to backend → get AI reply
-      // ───────────────────────────────────────────────
-      const res = await sendChat(conversationId, text);
+      // 3. Call backend
+      if (hasFiles) {
+        const formData = new FormData();
+        formData.append("conversation_id", conversationId.toString());
+        formData.append("prompt", trimmed);
 
-      const aiMsg: Message = { role: "assistant", content: res.answer };
+        pendingFiles.forEach((file) => {
+          formData.append("files", file);
+        });
 
-      updated = {
-        ...updated,
-        messages: [...updated.messages, aiMsg],
-      };
+        const res = await fetch("/chat/upload", {
+          method: "POST",
+          body: formData,
+        }).then((r) => r.json());
 
-      // Update UI again
-      setActiveConversation(updated);
+        const aiMsg: Message = {
+          role: "assistant",
+          content: res.answer,
+        };
 
-      setConversations((prev) => {
-        const filtered = prev.filter((c) => c.id !== updated.id);
-        return [updated, ...filtered];
-      });
+        updated = {
+          ...updated,
+          messages: [...updated.messages, aiMsg],
+        };
 
+        setActiveConversation(updated);
+        setConversations((prev) => {
+          const filtered = prev.filter((c) => c.id !== updated.id);
+          return [updated, ...filtered];
+        });
+      } else if (hasText) {
+        const res = await sendChat(conversationId, trimmed);
+
+        const aiMsg: Message = {
+          role: "assistant",
+          content: res.answer,
+        };
+
+        updated = {
+          ...updated,
+          messages: [...updated.messages, aiMsg],
+        };
+
+        setActiveConversation(updated);
+        setConversations((prev) => {
+          const filtered = prev.filter((c) => c.id !== updated.id);
+          return [updated, ...filtered];
+        });
+      }
     } finally {
       setLoading(false);
+      setPendingFiles([]);
     }
   }
-
 
   async function handleRename(conv: Conversation) {
     const newTitle = prompt("Enter new name:", conv.title ?? "");
@@ -447,6 +493,16 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
       e.preventDefault();
       handleSend();
     }
+  }
+
+  function handleChatFileUpload(
+    e: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (!files.length) return;
+    setPendingFiles((prev) => [...prev, ...files]);
+    // reset input so same file can be selected again
+    e.target.value = "";
   }
 
   if (!activeConversation) {
@@ -692,7 +748,11 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
         <main className="flex-1 px-5 py-10 overflow-hidden">
           <div className="h-full flex gap-4">
             {/* Messages column */}
-            <div className="flex-1 min-w-0 overflow-y-auto">
+            <div
+              className="flex-1 min-w-0 overflow-y-auto"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleDropFile}
+            >
               <div className="max-w-[740px] mx-auto flex flex-col gap-4">
                 {activeConversation.messages.map((msg, idx) => (
                   <ChatBubble
@@ -775,12 +835,61 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
         {/* FOOTER / INPUT BAR */}
         <footer className="border-t border-[#2C2D2F] bg-[transparent] p-6">
           <div
-            className="max-w-[740px] mx-auto flex w-full"
+            className="max-w-[740px] mx-auto flex w-full flex-col gap-2"
           >
+            {/* ATTACHMENT CHIPS (above input, ChatGPT-style) */}
+            {pendingFiles.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-1">
+                {pendingFiles.map((file, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 bg-[#111827] border border-[#374151] rounded-2xl px-2 py-1 max-w-[260px]"
+                  >
+                    {file.type.startsWith("image/") ? (
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={file.name}
+                        className="w-8 h-8 rounded object-cover"
+                      />
+                    ) : (
+                      <span className="text-sm">📎</span>
+                    )}
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs text-gray-100 truncate">
+                        {file.name}
+                      </span>
+                      <span className="text-[10px] text-gray-400">
+                        {Math.round(file.size / 1024)} KB
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPendingFiles((prev) => prev.filter((_, i) => i !== index))
+                      }
+                      className="ml-1 text-[10px] text-gray-400 hover:text-red-300"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* INPUT BUBBLE CONTAINER */}
             <div
               className="flex-1 bg-[#1E1E1E] rounded-3xl px-4 py-2 flex items-end shadow-md relative"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleDropFile}
             >
+              <input type="file" multiple hidden ref={attachmentInputRef} onChange={handleChatFileUpload} />
+              <button
+                onClick={() => attachmentInputRef.current?.click()}
+                className="w-8 h-8 rounded-full bg-[#555] flex items-center justify-center absolute left-3 bottom-3"
+              >
+                +
+              </button>
+
               <textarea
                 ref={textareaRef}
                 value={input}
@@ -808,7 +917,7 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
                   color: "white",
                   fontSize: "16px",
                   lineHeight: "1.5",
-                  paddingLeft: "12px",
+                  paddingLeft: "48px",
                   paddingRight: "42px",
                   paddingTop: "12px",
                   paddingBottom: "12px",
@@ -820,7 +929,7 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
               {/* SEND ICON INSIDE TEXTAREA BUBBLE */}
               <button
                 onClick={handleSend}
-                disabled={loading || !input.trim()}
+                disabled={loading || (!input.trim() && pendingFiles.length === 0)}
                 style={{
                   position: "absolute",
                   right: "14px",
@@ -829,7 +938,7 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
                   height: "32px",
                   borderRadius: "50%",
                   border: "none",
-                  background: input.trim() ? "#3B82F6" : "#444",
+                  background: input.trim() || pendingFiles.length > 0 ? "#3B82F6" : "#444",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",

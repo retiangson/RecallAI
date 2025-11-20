@@ -34,6 +34,6 @@ jobs:
         run: |
           sam deploy \
             --no-fail-on-empty-changeset \
-            --stack-name recallai_backend \
+            --stack-name recallai-backend \
             --resolve-s3 \
             --capabilities CAPABILITY_IAM

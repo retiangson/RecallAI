@@ -11,6 +11,11 @@ Globals:
       - x86_64
 
 Parameters:
+  StageName:
+    Type: String
+    Default: Prod
+    AllowedPattern: '^[A-Za-z0-9]+$'
+    Description: API Gateway stage name (e.g., Prod, v1)
   DatabaseUrl:
     Type: String
     Description: "Database connection string"

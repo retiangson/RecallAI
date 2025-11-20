@@ -2,6 +2,7 @@ import os
 import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from mangum import Mangum
 
 BACKEND_ROOT = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(BACKEND_ROOT)
@@ -54,3 +55,8 @@ app.include_router(notes_controller.router, prefix="/api/v1")
 app.include_router(chat_controller.router, prefix="/api/v1")
 app.include_router(bulk_controller.router, prefix="/api/v1")
 app.include_router(conversation_controller.router, prefix="/api/v1")
+
+# -------------------------------------
+# LAMBDA HANDLER (CRITICAL)
+# -------------------------------------
+handler = Mangum(app)

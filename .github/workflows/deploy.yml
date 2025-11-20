@@ -23,7 +23,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd recalai_backend
           pip install -r requirements.txt -t .
 
       - name: Configure AWS Credentials

@@ -4,6 +4,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 
+# Allow Lambda stage prefix (e.g. /Prod)
+STAGE_BASE = os.getenv("STAGE_BASE", "").rstrip("/")  # "" locally, "/Prod" in AWS
+
 BACKEND_ROOT = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(BACKEND_ROOT)
 
@@ -19,26 +22,23 @@ from recallai_backend.api.v1 import (
     conversation_controller
 )
 
-# -------------------------------------
-# CREATE APP
-# -------------------------------------
-app = FastAPI(title="RecallAI - Personal Notes Assistant")
+# ----------------------------
+# FASTAPI with stage support
+# ----------------------------
+app = FastAPI(
+    title="RecallAI - Personal Notes Assistant",
+    version="1.0.0",
+    docs_url="/api/docs",              # <--- FIXED
+    openapi_url="/api/openapi.json",   # <--- FIXED
+    redoc_url="/api/redoc",
+    root_path=STAGE_BASE or "",        # <--- FIXED
+)
 
-# -------------------------------------
-# GLOBAL HEALTHCHECK (Best Practice)
-# -------------------------------------
 @app.get("/health", tags=["system"])
 def healthcheck():
-    return {
-        "status": "ok",
-        "service": "recallai_backend",
-        "version": "1.0.0",
-        "environment": "lambda",
-    }
+    return {"status": "ok"}
 
-# -------------------------------------
-# CORS CONFIG
-# -------------------------------------
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -47,16 +47,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# -------------------------------------
-# ROUTERS
-# -------------------------------------
-app.include_router(auth_controller.router, prefix="/api/v1")
-app.include_router(notes_controller.router, prefix="/api/v1")
-app.include_router(chat_controller.router, prefix="/api/v1")
-app.include_router(bulk_controller.router, prefix="/api/v1")
-app.include_router(conversation_controller.router, prefix="/api/v1")
+# ----------------------------
+# ROUTES (under /api/*)
+# ----------------------------
+app.include_router(auth_controller.router, prefix="/api")
+app.include_router(notes_controller.router, prefix="/api")
+app.include_router(chat_controller.router, prefix="/api")
+app.include_router(bulk_controller.router, prefix="/api")
+app.include_router(conversation_controller.router, prefix="/api")
 
-# -------------------------------------
-# LAMBDA HANDLER (CRITICAL)
-# -------------------------------------
+# Lambda handler
 handler = Mangum(app)

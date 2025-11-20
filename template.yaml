@@ -14,8 +14,8 @@ Resources:
   RecallAIBackendFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: main.handler
-      CodeUri: ./
+      Handler: recallai_backend.main.handler
+      CodeUri: recallai_backend/
       FunctionName: recall-ai-backend
       Events:
         ApiGatewayProxy:

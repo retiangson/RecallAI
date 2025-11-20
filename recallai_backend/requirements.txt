@@ -1,11 +1,7 @@
-docx2txt
-PyPDF2
-python-pptx
-openpyxl
 fastapi
-uvicorn[standard]
+mangum
 sqlalchemy>=2.0
-psycopg2-binary
+psycopg2-binary==2.9.6
 pgvector
 pydantic>=2.0
 python-dotenv

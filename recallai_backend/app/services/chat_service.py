@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.domain.repositories.conversation_repository import ConversationRepository
 from app.domain.repositories.note_repository import NoteRepository
 from app.services.embedding_service import EmbeddingService
-from app.utils.file_extractor import extract_text_from_any_file
+from app.utils.file_extractor import extract_text_gpt
 from app.dtos.chat_dtos import ChatResponseDTO, ChatAnswerSource
 
 client = OpenAI(api_key=settings.openai_api_key)
@@ -165,7 +165,7 @@ class ChatService:
             # CASE 3 — DOCX / PPTX / XLSX / TXT → local extract
             # -----------------------------------------------------
             else:
-                extracted_text = extract_text_from_any_file(file_bytes, filename)
+                extracted_text = extract_text_gpt(file_bytes, filename)
 
                 content_blocks.append({
                     "type": "text",

@@ -8,7 +8,7 @@ import base64
 
 from app.core.dependencies import get_db, get_embedding_service
 from app.services.note_service import NoteService
-from app.utils.file_extractor import extract_text_from_any_file
+from app.utils.file_extractor import extract_text_gpt
 from app.dtos.note_dtos import NoteCreateDTO, NoteResponseDTO
 
 router = APIRouter(prefix="/notes", tags=["notes"])
@@ -99,7 +99,7 @@ async def upload_bulk_notes(
         # CASE 3: DOCX / PPTX / XLSX / TXT / ZIP → local extract
         # ----------------------------------------------------
         else:
-            extracted_raw = extract_text_from_any_file(file_bytes, filename)
+            extracted_raw = extract_text_gpt(file_bytes, filename)
 
             completion = client.chat.completions.create(
                 model="gpt-4o",

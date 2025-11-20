@@ -3,6 +3,7 @@ import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+print("DEBUG: app/main.py executing")
 # -------------------------------------
 # FIX PYTHONPATH for Lambda
 # -------------------------------------

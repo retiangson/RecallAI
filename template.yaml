@@ -52,6 +52,7 @@ Resources:
             Method: ANY
       Environment:
         Variables:
+          STAGE_BASE: !Sub "/${StageName}"
           DATABASE_URL: !Ref DatabaseUrl
           OPENAI_API_KEY: !Ref OpenAIApiKey
           OPENAI_EMBEDDING_MODEL: !Ref OpenAIEmbeddingModel
@@ -59,12 +60,16 @@ Resources:
 Outputs:
   ApiUrl:
     Description: Invoke URL
-    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
-
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/"
   DocsUrl:
     Description: Swagger Docs
-    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/docs"
-
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/docs"
+  OpenApiUrl:
+    Description: OpenAPI JSON URL
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/openapi.json"
   HealthUrl:
     Description: Healthcheck URL
-    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/health"
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/health"
+  FunctionArn:
+    Description: Deployed Lambda ARN
+    Value: !GetAtt RecallAIBackendFunction.Arn

@@ -37,7 +37,7 @@ Resources:
     Type: AWS::Serverless::LayerVersion
     Properties:
       LayerName: recallai-backend-layer
-      ContentUri: recallai_backend/vendor/
+      ContentUri: recallai_backend/
       CompatibleRuntimes:
         - python3.10
 

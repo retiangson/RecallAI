@@ -30,12 +30,13 @@ jobs:
         uses: aws-actions/setup-sam@v2
 
       # -----------------------
-      # 4) Install Python Dependencies into vendor/
+      # 4) Install Python Dependencies/
       # -----------------------
-      - name: Install dependencies into vendor layer
+      - name: Install dependencies
         run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt -t recallai_backend
+          python -m pip install --upgrade pip
+          pip install aws-sam-cli
+          pip install -r requirements.txt
 
       # -----------------------
       # 5) Configure AWS Credentials

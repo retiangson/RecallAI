@@ -10,21 +10,44 @@ Globals:
     Architectures:
       - x86_64
 
+Parameters:
+  DatabaseUrl:
+    Type: String
+    Description: "Database connection string"
+  OpenAIApiKey:
+    Type: String
+    Description: "OpenAI API key"
+  OpenAIEmbeddingModel:
+    Type: String
+    Default: "text-embedding-3-small"
+    Description: "Embedding model name"
+
 Resources:
 
-  # -------------------------------------------
-  # Main Lambda Function
-  # -------------------------------------------
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      BinaryMediaTypes:
+        - "*/*"
+
   RecallAIBackendFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: recallai.main.handler                # <--- FIXED
-      CodeUri: .          # <--- Your code
-      FunctionName: recallai-backend       # <--- FIXED (no underscore)
+      FunctionName: recallai-backend
+      CodeUri: .
+      Handler: recallai_backend.main.handler     # <— IMPORTANT
       Events:
-        ApiGatewayProxy:
+        ApiRoot:
           Type: Api
           Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /
+            Method: ANY
+        ApiProxy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
             Path: /{proxy+}
             Method: ANY
       Environment:
@@ -36,4 +59,12 @@ Resources:
 Outputs:
   ApiUrl:
     Description: Invoke URL
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+
+  DocsUrl:
+    Description: Swagger Docs
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/docs"
+
+  HealthUrl:
+    Description: Healthcheck URL
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/health"

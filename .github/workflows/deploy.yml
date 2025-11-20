@@ -34,15 +34,13 @@ jobs:
 
       - name: Build Lambda Package
         run: |
-          cd backend
           sam build --use-container
 
       - name: Deploy to AWS Lambda
         run: |
-          cd backend
           sam deploy \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
-            --stack-name recall-ai-backend \
+            --stack-name recallai-backend \
             --resolve-s3 \
             --capabilities CAPABILITY_IAM

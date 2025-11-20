@@ -7,19 +7,40 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
+      # -----------------------
+      # 1) Checkout Repo
+      # -----------------------
       - name: Checkout repo
         uses: actions/checkout@v3
 
+      # -----------------------
+      # 2) Setup Python
+      # -----------------------
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
+      # -----------------------
+      # 3) Install AWS SAM CLI
+      # -----------------------
       - name: Install AWS SAM
         uses: aws-actions/setup-sam@v2
 
+      # -----------------------
+      # 4) Install Python Dependencies into vendor/
+      # -----------------------
+      - name: Install dependencies into vendor layer
+        run: |
+          mkdir -p recallai_backend/vendor
+          pip install --upgrade pip
+          pip install -r requirements.txt -t recallai_backend/vendor
+
+      # -----------------------
+      # 5) Configure AWS Credentials
+      # -----------------------
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -27,9 +48,15 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-southeast-2
 
+      # -----------------------
+      # 6) Build with SAM
+      # -----------------------
       - name: Build Lambda Package
         run: sam build --use-container
 
+      # -----------------------
+      # 7) Deploy with SAM
+      # -----------------------
       - name: Deploy to AWS Lambda
         run: |
           sam deploy \

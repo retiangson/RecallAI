@@ -30,7 +30,7 @@ app = FastAPI(title="RecallAI - Personal Notes Assistant")
 def healthcheck():
     return {
         "status": "ok",
-        "service": "recallai-backend",
+        "service": "recallai_backend",
         "version": "1.0.0",
         "environment": "lambda",
     }

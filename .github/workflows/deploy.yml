@@ -23,7 +23,7 @@ jobs:
 
       - name: Install dependencies into backend folder
         run: |
-          pip install -r recalai_backend/requirements.txt -t recalai_backend/
+          pip install -r recallai_backend/requirements.txt -t recallai_backend/
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2

@@ -34,9 +34,8 @@ jobs:
       # -----------------------
       - name: Install dependencies into vendor layer
         run: |
-          mkdir -p recallai_backend/vendor
           pip install --upgrade pip
-          pip install -r requirements.txt -t recallai_backend/vendor
+          pip install -r requirements.txt -t recallai_backend
 
       # -----------------------
       # 5) Configure AWS Credentials

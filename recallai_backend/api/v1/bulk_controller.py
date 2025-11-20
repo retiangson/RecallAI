@@ -5,10 +5,10 @@ from openai import OpenAI
 import mimetypes
 import base64
 
-from app.core.dependencies import get_db
-from app.services.note_service import NoteService
-from app.utils.file_extractor import extract_text_gpt
-from app.dtos.note_dtos import NoteCreateDTO, NoteResponseDTO
+from recallai_backend.core.dependencies import get_db
+from recallai_backend.services.note_service import NoteService
+from recallai_backend.utils.file_extractor import extract_text_gpt
+from recallai_backend.dtos.note_dtos import NoteCreateDTO, NoteResponseDTO
 
 router = APIRouter(prefix="/notes", tags=["notes"])
 client = OpenAI()

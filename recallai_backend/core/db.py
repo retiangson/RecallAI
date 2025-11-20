@@ -2,7 +2,7 @@
 
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from sqlalchemy import create_engine
-from app.core.config import settings
+from recallai_backend.core.config import settings
 
 
 # SQLAlchemy 2.0 style Base class

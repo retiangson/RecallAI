@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from app.domain.repositories.user_repository import UserRepository
-from app.dtos.auth_dtos import RegisterDTO, LoginDTO, UserResponse
+from recallai_backend.domain.repositories.user_repository import UserRepository
+from recallai_backend.dtos.auth_dtos import RegisterDTO, LoginDTO, UserResponse
 
 class AuthService:
     def __init__(self, db: Session):

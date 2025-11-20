@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.domain.models.user_model import User
+from recallai_backend.domain.models.user_model import User
 
 class UserRepository:
     def __init__(self, db: Session):

@@ -1,5 +1,5 @@
-from app.core.db import SessionLocal
-from app.services.embedding_service import EmbeddingService
+from recallai_backend.core.db import SessionLocal
+from recallai_backend.services.embedding_service import EmbeddingService
 
 
 def get_db():

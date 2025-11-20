@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session, joinedload
-from app.domain.models.conversation import Conversation
-from app.domain.models.message import Message
+from recallai_backend.domain.models.conversation import Conversation
+from recallai_backend.domain.models.message import Message
 
 class ConversationRepository:
     def __init__(self, db: Session):

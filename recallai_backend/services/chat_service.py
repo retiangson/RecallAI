@@ -5,12 +5,12 @@ from openai import OpenAI
 import base64
 import mimetypes
 
-from app.core.config import settings
-from app.domain.repositories.conversation_repository import ConversationRepository
-from app.domain.repositories.note_repository import NoteRepository
-from app.services.embedding_service import EmbeddingService
-from app.utils.file_extractor import extract_text_gpt
-from app.dtos.chat_dtos import ChatResponseDTO, ChatAnswerSource
+from recallai_backend.core.config import settings
+from recallai_backend.domain.repositories.conversation_repository import ConversationRepository
+from recallai_backend.domain.repositories.note_repository import NoteRepository
+from recallai_backend.services.embedding_service import EmbeddingService
+from recallai_backend.utils.file_extractor import extract_text_gpt
+from recallai_backend.dtos.chat_dtos import ChatResponseDTO, ChatAnswerSource
 
 client = OpenAI(api_key=settings.openai_api_key)
 

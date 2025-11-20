@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from app.core.dependencies import get_db, get_embedding_service
+from recallai_backend.core.dependencies import get_db, get_embedding_service
 
-from app.dtos.note_dtos import (
+from recallai_backend.dtos.note_dtos import (
     NoteCreateDTO, 
     NoteUpdateDTO, 
     NoteDeleteDTO,
@@ -12,7 +12,7 @@ from app.dtos.note_dtos import (
     NoteResponseDTO
 )
 
-from app.services.note_service import NoteService
+from recallai_backend.services.note_service import NoteService
 
 router = APIRouter(prefix="/notes", tags=["notes"])
 

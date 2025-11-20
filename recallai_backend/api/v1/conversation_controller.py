@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
-from app.core.dependencies import get_db
-from app.services.conversation_service import ConversationService
+from recallai_backend.core.dependencies import get_db
+from recallai_backend.services.conversation_service import ConversationService
 
 router = APIRouter(prefix="/conversation", tags=["conversation"])
 

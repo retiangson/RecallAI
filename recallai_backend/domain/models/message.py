@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, func
 from sqlalchemy.orm import relationship
-from app.core.db import Base
+from recallai_backend.core.db import Base
 
 class Message(Base):
     __tablename__ = "messages"

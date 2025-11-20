@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-from app.domain.repositories.note_repository import NoteRepository
-from app.dtos.note_dtos import NoteCreateDTO, NoteUpdateDTO, NoteResponseDTO
-from app.services.embedding_service import EmbeddingService
+from recallai_backend.domain.repositories.note_repository import NoteRepository
+from recallai_backend.dtos.note_dtos import NoteCreateDTO, NoteUpdateDTO, NoteResponseDTO
+from recallai_backend.services.embedding_service import EmbeddingService
 
 
 class NoteService:

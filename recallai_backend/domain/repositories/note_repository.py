@@ -1,8 +1,8 @@
 from typing import List
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from app.domain.models.note import Note
-from app.domain.models.embedding import Embedding
+from recallai_backend.domain.models.note import Note
+from recallai_backend.domain.models.embedding import Embedding
 
 class NoteRepository:
     def __init__(self, db: Session):

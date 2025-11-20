@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, ForeignKey
 from sqlalchemy.orm import relationship
-from app.core.db import Base
-from app.domain.models.vector_type import VectorType
+from recallai_backend.core.db import Base
+from recallai_backend.domain.models.vector_type import VectorType
 
 
 class Embedding(Base):

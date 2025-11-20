@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.domain.repositories.conversation_repository import ConversationRepository
+from recallai_backend.domain.repositories.conversation_repository import ConversationRepository
 
 
 class ConversationService:

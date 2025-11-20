@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String
-from app.core.db import Base
+from recallai_backend.core.db import Base
 
 class User(Base):
     __tablename__ = "users"

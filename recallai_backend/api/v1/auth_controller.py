@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import get_db
-from app.services.auth_service import AuthService
-from app.dtos.auth_dtos import RegisterDTO, LoginDTO, UserResponse
+from recallai_backend.core.dependencies import get_db
+from recallai_backend.services.auth_service import AuthService
+from recallai_backend.dtos.auth_dtos import RegisterDTO, LoginDTO, UserResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

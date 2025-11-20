@@ -1,0 +1,10 @@
+PyPDF2
+docx
+fastapi
+openai
+passlib
+pydantic
+pydantic-settings
+python-dotenv
+recallai_backend
+sqlalchemy

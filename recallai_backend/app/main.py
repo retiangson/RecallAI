@@ -3,19 +3,12 @@ import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-print("DEBUG: app/main.py executing")
-# -------------------------------------
-# FIX PYTHONPATH for Lambda
-# -------------------------------------
-BACKEND_ROOT = os.path.dirname(os.path.abspath(__file__))  # recallai_backend/app
-PROJECT_ROOT = os.path.dirname(BACKEND_ROOT)               # recallai_backend
+BACKEND_ROOT = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(BACKEND_ROOT)
 
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-# -------------------------------------
-# IMPORTS (after sys.path fix)
-# -------------------------------------
 from app.core.db import Base, engine
 from app.api.v1 import (
     notes_controller,
@@ -31,6 +24,18 @@ from app.api.v1 import (
 app = FastAPI(title="RecallAI - Personal Notes Assistant")
 
 # -------------------------------------
+# GLOBAL HEALTHCHECK (Best Practice)
+# -------------------------------------
+@app.get("/health", tags=["system"])
+def healthcheck():
+    return {
+        "status": "ok",
+        "service": "recallai-backend",
+        "version": "1.0.0",
+        "environment": "lambda",
+    }
+
+# -------------------------------------
 # CORS CONFIG
 # -------------------------------------
 app.add_middleware(
@@ -40,12 +45,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# -------------------------------------
-# DO NOT RUN MIGRATIONS ON IMPORT
-# -------------------------------------
-# Base.metadata.create_all(bind=engine)
-# (This must NOT run in Lambda cold start)
 
 # -------------------------------------
 # ROUTERS

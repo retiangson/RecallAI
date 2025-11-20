@@ -1,35 +1,58 @@
+import docx
+import PyPDF2
+import zipfile
+import io
 from typing import List
 from openai import OpenAI
 
 client = OpenAI()
 
-async def extract_text_gpt(file_bytes_list: List[bytes], filenames: List[str]) -> str:
-    """
-    Universal extractor using GPT-4o Vision.
-    Works for ALL file types: PDF, DOCX, PPT, XLSX, IMAGES, TXT, etc.
-    """
+def extract_text_local(file_bytes: bytes, filename: str) -> str:
+    ext = filename.lower().split(".")[-1]
 
-    # Upload all files to OpenAI
-    file_ids = []
-    for bytes_, name in zip(file_bytes_list, filenames):
-        uploaded = client.files.create(
-            file=(name, bytes_, "application/octet-stream"),
-            purpose="vision"
-        )
-        file_ids.append(uploaded.id)
+    # ----- PDF -----
+    if ext == "pdf":
+        reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
+        return "\n".join(page.extract_text() or "" for page in reader.pages)
 
+    # ----- DOCX -----
+    if ext == "docx":
+        doc = docx.Document(io.BytesIO(file_bytes))
+        return "\n".join(p.text for p in doc.paragraphs)
+
+    # ----- TXT -----
+    if ext == "txt":
+        return file_bytes.decode("utf-8", errors="ignore")
+
+    # ----- ZIP -----
+    if ext == "zip":
+        with zipfile.ZipFile(io.BytesIO(file_bytes)) as z:
+            out = []
+            for name in z.namelist():
+                if name.lower().endswith(".txt"):
+                    out.append(z.read(name).decode("utf-8", errors="ignore"))
+        return "\n".join(out)
+
+    return "Unable to extract text locally."
+
+
+def extract_text_gpt(file_bytes_list: List[bytes], filenames: List[str]) -> str:
+    """Local extraction first → GPT cleaning second."""
+
+    # 1) Local raw extraction
+    raw_text = extract_text_local(file_bytes_list[0], filenames[0])
+
+    # 2) GPT cleaning pass
     completion = client.chat.completions.create(
         model="gpt-4o",
-        messages=[{
-            "role": "user",
-            "content": [
-                {"type": "text", "text": "Extract ALL text from these files."},
-                *[
-                    {"type": "file", "file": {"file_id": f}}
-                    for f in file_ids
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": f"Clean and normalize this extracted text:\n\n{raw_text}"}
                 ]
-            ]
-        }]
+            }
+        ]
     )
 
-    return completion.choices[0].message["content"]
+    return completion.choices[0].message.content

@@ -18,28 +18,20 @@ Resources:
   RecallAIBackendFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: main.handler                # <--- FIXED
-      CodeUri: recallai_backend/           # <--- Your code
+      Handler: recallai.main.handler                # <--- FIXED
+      CodeUri: .          # <--- Your code
       FunctionName: recallai-backend       # <--- FIXED (no underscore)
-      Layers:
-        - !Ref RecallAILayer               # <--- Connect vendor dependencies
       Events:
         ApiGatewayProxy:
           Type: Api
           Properties:
             Path: /{proxy+}
             Method: ANY
-
-  # -------------------------------------------
-  # Dependency Layer (vendor/)
-  # -------------------------------------------
-  RecallAILayer:
-    Type: AWS::Serverless::LayerVersion
-    Properties:
-      LayerName: recallai-backend-layer
-      ContentUri: recallai_backend/
-      CompatibleRuntimes:
-        - python3.10
+      Environment:
+        Variables:
+          DATABASE_URL: !Ref DatabaseUrl
+          OPENAI_API_KEY: !Ref OpenAIApiKey
+          OPENAI_EMBEDDING_MODEL: !Ref OpenAIEmbeddingModel
 
 Outputs:
   ApiUrl:

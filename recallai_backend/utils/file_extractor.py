@@ -18,14 +18,12 @@ def extract_text_local(file_bytes: bytes, filename: str) -> str:
 
     # ----- PDF -----
     if ext == "pdf":
-        try:
-            doc = pdfplumber.open(stream=file_bytes, filetype="pdf")
-            text = []
-            for page in doc:
-                text.append(page.get_text())
-            return "\n".join(text)
-        except Exception as e:
-            return f"[PDF extraction error] {e}"
+        text_parts = []
+        with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+            for page in pdf.pages:
+                text = page.extract_text() or ""
+                text_parts.append(text)
+        return "\n".join(text_parts)
 
     # ----- DOCX -----
     if ext == "docx":
@@ -104,6 +102,4 @@ def extract_text_gpt(file_bytes_list: List[bytes], filenames: List[str]) -> str:
 
     # OPTIONAL: clean text with GPT
     # (Remove this if you want PURE raw extraction)
-    cleaned = clean_text_gpt(raw)
-
-    return cleaned
+    return extract_text_local(raw)

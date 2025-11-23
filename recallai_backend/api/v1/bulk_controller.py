@@ -5,9 +5,9 @@ from openai import OpenAI
 import mimetypes
 import base64
 
-from recallai_backend.core.dependencies import get_db
+from recallai_backend.core.dependencies import get_db, get_embedding_service
 from recallai_backend.services.note_service import NoteService
-from recallai_backend.utils.file_extractor import extract_text_gpt
+from recallai_backend.utils.file_extractor import extract_text_local
 from recallai_backend.dtos.note_dtos import NoteCreateDTO, NoteResponseDTO
 
 router = APIRouter(prefix="/notes", tags=["notes"])
@@ -36,7 +36,7 @@ async def upload_bulk_notes(
         file_bytes = await file.read()
 
         # --------------------------------------------------
-        # CASE 1 — IMAGES → use base64 image_url
+        # CASE 1 — IMAGE FILES → use GPT-4o Vision
         # --------------------------------------------------
         if is_image(filename, mime):
             b64 = base64.b64encode(file_bytes).decode()
@@ -45,48 +45,34 @@ async def upload_bulk_notes(
             completion = client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
-                    {"role": "system", "content": "Extract text from this image and convert to clean markdown notes."},
+                    {"role": "system", "content": "Extract text from this image. Output raw text. No summary."},
                     {
                         "role": "user",
                         "content": [
-                            {"type": "image_url", "image_url": {"url": image_url}}
+                            {"type": "input_image", "image_url": image_url}
                         ],
                     },
                 ],
             )
 
-            extracted_notes = completion.choices[0].message.content
+            extracted_text = completion.choices[0].message.content
 
         # --------------------------------------------------
-        # CASE 3 — DOCX, PPTX, XLSX, TXT, ZIP, CSV, OTHER
-        # Universal extractor
+        # CASE 2 — ALL OTHER FILE TYPES → Local extraction only
         # --------------------------------------------------
         else:
-            extracted_raw = extract_text_gpt([file_bytes], [filename])
+            extracted_text = extract_text_local(file_bytes, filename)
 
-            completion = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": (
-                        "Extract ALL text exactly as it appears in the source. "
-                        "Do NOT summarize, shorten, rewrite, or reorganize. "
-                        "Preserve headings, paragraphs, line breaks, and bullet points. "
-                        "Output clean, readable text only — no analysis, no commentary."
-                    )},
-                    {"role": "user", "content": [{"type": "text", "text": extracted_raw}]},
-                ],
-            )
-
-            extracted_notes = completion.choices[0].message.content
-
-        # Save note
-        if extracted_notes.strip():
+        # --------------------------------------------------
+        # SAVE NOTE
+        # --------------------------------------------------
+        if extracted_text and extracted_text.strip():
             saved_notes.append(
                 service.create_note(
                     NoteCreateDTO(
                         user_id=user_id,
                         title=filename,
-                        content=extracted_notes,
+                        content=extracted_text,
                         source="bulk_upload",
                     )
                 )

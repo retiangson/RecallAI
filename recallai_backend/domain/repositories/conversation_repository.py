@@ -81,3 +81,38 @@ class ConversationRepository:
             self.db.commit()
             return True
         return False
+
+    # ─────────────────────────────────────────────
+    # Get paginated messages for a conversation
+    # ─────────────────────────────────────────────
+    def get_messages_paginated(self, conv_id: int, limit: int, before_id: int | None):
+        query = (
+            self.db.query(Message)
+            .filter(Message.conversation_id == conv_id)
+        )
+
+        if before_id:
+            query = query.filter(Message.id < before_id)
+
+        return (
+            query.order_by(Message.id.desc())
+                .limit(limit)
+                .all()
+        )
+    
+    # ─────────────────────────────────────────────
+    # Delete a single message by ID
+    # ─────────────────────────────────────────────    
+    def delete_message(self, message_id: int):
+        msg = (
+            self.db.query(Message)
+            .filter(Message.id == message_id)
+            .first()
+        )
+
+        if not msg:
+            return False
+
+        self.db.delete(msg)
+        self.db.commit()
+        return True

@@ -23,3 +23,5 @@ class ChatResponseDTO(BaseModel):
     sources: List[ChatAnswerSource] = []
     attachments: List[ChatAttachmentDTO] = []
 
+class DeleteMessageDTO(BaseModel):
+    message_id: int

@@ -15,12 +15,16 @@ import {
   createConversation,
   deleteConversation,
   renameConversation,
+  addMessageToNoteAPI,
+  deleteMessage,
+  getConversationMessagesPaginated,
 } from "../api/conversationApi";
 import ChatBubble from "../components/ChatBubble";
 
 type MessageRole = "user" | "assistant";
 
 interface Message {
+  id: number;
   role: MessageRole;
   content: string;
 }
@@ -40,6 +44,9 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+
+  const [messagesLimit] = useState(10);
+  const [messagesCursor, setMessagesCursor] = useState<number | null>(null);
 
   const [notes, setNotes] = useState<any[]>([]);
 
@@ -152,19 +159,28 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
     setIsNoteDirty(false);
   }
 
-  async function loadMessages(conversationId: number) {
-    const msgs = await getConversationMessages(conversationId);
-
-    // sort strictly by timestamp or id
-    msgs.sort((a: any, b: any) => {
-      if (a.id && b.id) return a.id - b.id;
-      return (new Date(a.created_at).getTime()) -
-            (new Date(b.created_at).getTime());
-    });
-
-    setActiveConversation((prev) =>
-      prev ? { ...prev, messages: msgs } : null
+  async function loadMessages(conversationId: number, loadOlder = false) {
+    const res = await getConversationMessagesPaginated(
+      conversationId,
+      10,
+      loadOlder ? (messagesCursor ?? undefined) : undefined
     );
+    
+    if (!loadOlder) {
+      // first load
+      setActiveConversation((prev) =>
+        prev ? { ...prev, messages: res } : null
+      );
+    } else {
+      // loading older
+      setActiveConversation((prev) =>
+        prev ? { ...prev, messages: [...res, ...prev.messages] } : null
+      );
+    }
+
+    if (res.length > 0) {
+      setMessagesCursor(res[0].id);
+    }
   }
 
   // RESIZE NOTE PANEL
@@ -364,6 +380,7 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
       }
 
       const userMsg: Message = {
+        id: Date.now() -1, // temporary ID
         role: "user",
         content: userContent || "",
       };
@@ -384,6 +401,7 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
         const res = await uploadChat(conversationId, trimmed, pendingFiles);
 
         const aiMsg: Message = {
+          id: res.message_id,
           role: "assistant",
           content: res.answer,
         };
@@ -402,6 +420,7 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
         const res = await sendChat(conversationId, trimmed);
 
         const aiMsg: Message = {
+          id: res.message_id,
           role: "assistant",
           content: res.answer,
         };
@@ -477,6 +496,40 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
 
   function handleAddToNotes(conv: Conversation) {
     alert("Add to Notes feature coming soon!");
+  }
+
+  async function handleAddMessageToNotes(content: string) {
+    try {
+      const res = await addMessageToNoteAPI(user.id, content, "Chat Snippet");
+
+      // Load the newly created note
+      const fresh = await getNote(res.id);
+
+      setNotes((prev) => [fresh, ...prev]);
+
+    } catch (err) {
+      console.error("Error adding message to notes:", err);
+    }
+  }
+
+
+  async function handleDeleteMessage(messageId: number, index: number) {
+    if (!activeConversation) return;
+
+    try {
+      await deleteMessage(messageId);
+    } catch (err) {
+      console.error("Delete message failed:", err);
+    }
+
+    const updatedMessages = activeConversation.messages.filter(
+      (_, i) => i !== index
+    );
+
+    setActiveConversation({
+      ...activeConversation,
+      messages: updatedMessages,
+    });
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -766,6 +819,8 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
                     key={idx}
                     role={msg.role}
                     content={msg.content}
+                    onAdd={() => handleAddMessageToNotes(msg.content)}
+                    onDelete={() => handleDeleteMessage(msg.id, idx)}
                   />
                 ))}
 

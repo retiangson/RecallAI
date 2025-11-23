@@ -59,3 +59,31 @@ export async function deleteConversation(conversation_id: number) {
   });
   return res.data;
 }
+
+
+export async function getConversationMessagesPaginated(
+  conversationId: number,
+  limit: number = 10,
+  beforeId?: number
+) {
+  const res = await axios.post(`${API_BASE}/conversation/messages?limit=${limit}${beforeId ? `&before_id=${beforeId}` : ""}`, {
+    conversation_id: conversationId,
+  });
+  return res.data;
+}
+
+export async function deleteMessage(messageId: number) {
+  const res = await axios.post(`${API_BASE}/conversation/delete-message`, {
+    message_id: messageId,
+  });
+  return res.data;
+}
+
+export async function addMessageToNoteAPI(userId: number, content: string, title = "Chat Snippet") {
+  const res = await axios.post(`${API_BASE}/conversation/add-to-note`, {
+    user_id: userId,
+    content,
+    title
+  });
+  return res.data;
+}

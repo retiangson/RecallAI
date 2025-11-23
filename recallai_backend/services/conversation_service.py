@@ -1,5 +1,7 @@
 from sqlalchemy.orm import Session
 from recallai_backend.domain.repositories.conversation_repository import ConversationRepository
+from recallai_backend.domain.repositories.note_repository import NoteRepository
+from recallai_backend.services.embedding_service import EmbeddingService
 
 
 class ConversationService:
@@ -78,13 +80,11 @@ class ConversationService:
     def delete(self, conv_id: int):
         return self.repo.delete(conv_id)
 
-    def get_messages(self, conversation_id: int):
-        messages = self.repo.get_messages(conversation_id)
+    def get_messages(self, conversation_id: int, limit: int = 10, before_id: int | None = None):
+        messages = self.repo.get_messages_paginated(conversation_id, limit, before_id)
 
-        # Order by ID ascending (oldest → newest)
-        messages.sort(key=lambda m: m.id)
+        messages.sort(key=lambda m: m.id)  # oldest → newest for UI
 
-        # Convert to DTOs
         return [
             {
                 "id": msg.id,
@@ -95,3 +95,27 @@ class ConversationService:
             }
             for msg in messages
         ]
+    
+    def delete_message(self, message_id: int):
+        return self.repo.delete_message(message_id)
+    
+    def add_message_to_note(self, user_id: int, content: str, title: str):
+        notes = NoteRepository(self.db)
+        embed = EmbeddingService()
+
+        # 1. Create note
+        note = notes.create_note(
+            user_id=user_id,
+            title=title,
+            content=content,
+            source="chat"
+        )
+
+        # 2. Embed
+        vector = embed.embed_text(content)
+        notes.save_embedding(note.id, vector)
+
+        self.db.commit()
+
+        return {"id": note.id, "title": title}
+    

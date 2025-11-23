@@ -58,30 +58,6 @@ async def upload_bulk_notes(
             extracted_notes = completion.choices[0].message.content
 
         # --------------------------------------------------
-        # CASE 2 — PDF → upload as `input` and use input_file
-        # --------------------------------------------------
-        elif filename.lower().endswith(".pdf"):
-            uploaded = client.files.create(
-                file=(filename, file_bytes, mime),
-                purpose="input",
-            )
-
-            completion = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": "Extract and summarize PDF content as clean markdown notes."},
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "input_file", "input_file_id": uploaded.id}
-                        ],
-                    },
-                ],
-            )
-
-            extracted_notes = completion.choices[0].message.content
-
-        # --------------------------------------------------
         # CASE 3 — DOCX, PPTX, XLSX, TXT, ZIP, CSV, OTHER
         # Universal extractor
         # --------------------------------------------------
@@ -91,7 +67,12 @@ async def upload_bulk_notes(
             completion = client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
-                    {"role": "system", "content": "Turn extracted text into clean structured markdown notes."},
+                    {"role": "system", "content": (
+                        "Extract ALL text exactly as it appears in the source. "
+                        "Do NOT summarize, shorten, rewrite, or reorganize. "
+                        "Preserve headings, paragraphs, line breaks, and bullet points. "
+                        "Output clean, readable text only — no analysis, no commentary."
+                    )},
                     {"role": "user", "content": [{"type": "text", "text": extracted_raw}]},
                 ],
             )

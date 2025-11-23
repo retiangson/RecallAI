@@ -2,7 +2,7 @@ import io
 import zipfile
 from typing import List
 
-import pymupdf as fitz              # PyMuPDF (best PDF extractor)
+import pdfplumber
 import docx              # python-docx
 from pptx import Presentation   # python-pptx
 
@@ -19,7 +19,7 @@ def extract_text_local(file_bytes: bytes, filename: str) -> str:
     # ----- PDF -----
     if ext == "pdf":
         try:
-            doc = fitz.open(stream=file_bytes, filetype="pdf")
+            doc = pdfplumber.open(stream=file_bytes, filetype="pdf")
             text = []
             for page in doc:
                 text.append(page.get_text())

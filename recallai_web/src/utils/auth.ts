@@ -1,4 +1,4 @@
-export function saveUser(user: { id: number; email: string }) {
+export function saveUser(user: { id: number; email: string } | null) {
   localStorage.setItem("recallai_user", JSON.stringify(user));
 }
 

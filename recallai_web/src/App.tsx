@@ -8,7 +8,7 @@ export default function App() {
   // Load current user from local storage/session.
   // If no user is logged in, getUser() returns null.
   // -----------------------------------------------
-  const [user, setUser] = useState(getUser());
+  const [user, setUser] = useState<{ id: number; email: string } | null>(getUser());
 
   // ---------------------------------------------------------
   // Called after successful login (LoginPage → onLogin callback).

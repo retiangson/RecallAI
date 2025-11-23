@@ -1,3 +1,4 @@
+import { saveUser } from "../utils/auth";
 import React, { useEffect, useState, KeyboardEvent, useRef } from "react";
 import { sendChat, uploadChat } from "../api/chatApi";
 import {
@@ -495,6 +496,12 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
     e.target.value = "";
   }
 
+  function handleLogout() {
+    localStorage.removeItem("user");
+    saveUser(null); // optional if your helper expects it
+    window.location.reload(); // simplest reset
+  }
+
   if (!activeConversation) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-[#121212] text-gray-300">
@@ -724,15 +731,25 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
         ref={layoutRef}
       >
         {/* HEADER */}
-        <header className="h-10 flex items-center justify-between px-6 bg-[#202123] border-b border-[#2C2D2F] shadow-md">
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-300 opacity-80">
-              {activeConversation.title || "Conversation"}
-            </span>
-          </div>
-          <div className="text-xs text-gray-400">Logged in as {user.email}</div>
-          
-        </header>
+      <header className="h-10 flex items-center justify-between px-6 bg-[#202123] border-b border-[#2C2D2F] shadow-md">
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-gray-300 opacity-80">
+            {activeConversation.title || "Conversation"}
+          </span>
+        </div>
+
+        {/* LOGOUT BUTTON */}
+        <div className="flex items-center gap-4 text-xs text-gray-400">
+          <span>Logged in as {user.email}</span>
+
+          <button
+            onClick={handleLogout}
+            className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs"
+          >
+            Logout
+          </button>
+        </div>
+      </header>
         
         {/* CENTER: MESSAGES + NOTE PANEL */}
         <main className="flex-1 px-5 py-10 overflow-hidden">

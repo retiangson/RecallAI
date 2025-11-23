@@ -1,9 +1,9 @@
 import axios from "axios";
 
 // Load backend URL from Vite .env
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || "https://txerft5ftb.execute-api.ap-southeast-2.amazonaws.com/Prod/api";
-  //import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/api/v1";
+export const API_BASE =
+  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "")
+  
 // Axios client
 export const client = axios.create({
   baseURL: API_BASE,

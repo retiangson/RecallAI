@@ -16,3 +16,5 @@ python-docx
 pdfplumber
 python-pptx
 openpyxl
+
+traitlets==5.14.0

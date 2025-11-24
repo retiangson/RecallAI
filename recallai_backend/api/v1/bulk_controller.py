@@ -1,9 +1,12 @@
 from typing import List
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, Depends
 from openai import OpenAI
 import base64, mimetypes
 
-from recallai_backend.bootstrap import container
+from recallai_backend.di.request_container import (
+    RequestContainer,
+    get_request_container,
+)
 from recallai_backend.utils.file_extractor import extract_text_local
 from recallai_backend.contracts.note_dtos import NoteCreateDTO, NoteResponseDTO
 
@@ -19,8 +22,12 @@ def is_image(filename: str, content_type: str) -> bool:
 
 
 @router.post("/bulk", response_model=List[NoteResponseDTO])
-async def upload_bulk_notes(user_id: int, files: List[UploadFile] = File(...)):
-    service = container.get_note_service()
+async def upload_bulk_notes(
+    user_id: int,
+    files: List[UploadFile] = File(...),
+    c: RequestContainer = Depends(get_request_container),
+):
+    service = c.notes()
     saved_notes: List[NoteResponseDTO] = []
 
     for file in files:

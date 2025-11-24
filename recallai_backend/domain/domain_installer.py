@@ -1,9 +1,6 @@
 from __future__ import annotations
 from typing import Optional
-
 from sqlalchemy.orm import Session
-
-from recallai_backend.core.db import SessionLocal
 
 # Repository interfaces
 from recallai_backend.domain.interfaces.i_user_repository import IUserRepository
@@ -21,16 +18,16 @@ from recallai_backend.business.services.embedding_service import EmbeddingServic
 
 class DomainInstaller:
     """
-    The ROOT of all domain-layer dependency creation.
-    This class is responsible for:
-        - Creating DB sessions
-        - Creating repositories (interfaces)
-        - Creating embedding services
-        - Managing lifetime of domain resources
+    TRANSIENT Domain Installer.
+    Creates a NEW instance for every request:
+        - New repositories
+        - New DB session (injected)
+        - New embedding service
     """
 
-    def __init__(self, db: Optional[Session] = None):
-        self._db = db or SessionLocal()
+    def __init__(self, db: Session):
+        # DB is NOW supplied externally (FastAPI Depends)
+        self._db = db
 
     # ─────────────────────────────────────────────
     # DB Session
@@ -42,10 +39,11 @@ class DomainInstaller:
     # Embedding Service
     # ─────────────────────────────────────────────
     def get_embedding_service(self) -> EmbeddingService:
+        # EmbeddingService is stateless → safe as transient
         return EmbeddingService()
 
     # ─────────────────────────────────────────────
-    # Repositories (Domain Interfaces)
+    # Repositories (Transient)
     # ─────────────────────────────────────────────
     def get_user_repository(self) -> IUserRepository:
         return UserRepository(self._db)

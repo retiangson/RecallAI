@@ -87,6 +87,10 @@ class ConversationRepository:
     # Get paginated messages for a conversation
     # ─────────────────────────────────────────────
     def get_messages_paginated(self, conv_id: int, limit: int, before_id: int | None):
+        """
+        Return messages newest → oldest for pagination.
+        ChatService will reverse them for GPT.
+        """
         query = (
             self.db.query(Message)
             .filter(Message.conversation_id == conv_id)
@@ -96,10 +100,11 @@ class ConversationRepository:
             query = query.filter(Message.id < before_id)
 
         return (
-            query.order_by(Message.id.desc())
+            query.order_by(Message.id.desc())   # ⭐ REVERTED BACK TO DESC
                 .limit(limit)
                 .all()
         )
+
     
     # ─────────────────────────────────────────────
     # Delete a single message by ID

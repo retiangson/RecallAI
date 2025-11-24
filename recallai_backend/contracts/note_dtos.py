@@ -1,9 +1,45 @@
-"""
-Note-related DTOs (contracts).
+# recallai_backend/contracts/note_dtos.py
 
-Thin wrapper around `recallai_backend.dtos.note_dtos`.
-"""
+from typing import Optional, List
+from pydantic import BaseModel
 
-from recallai_backend.dtos.note_dtos import *  # noqa: F401,F403
 
-# If you want to be explicit later, you can list only the DTOs you expose.
+class NoteCreateDTO(BaseModel):
+    user_id: int
+    title: Optional[str] = None
+    content: str
+    source: Optional[str] = None
+
+
+class NoteResponseDTO(BaseModel):
+    id: int
+    user_id: int
+    title: Optional[str]
+    content: str
+    source: Optional[str]
+
+    class Config:
+        from_attributes = True
+
+
+class NoteGetDTO(BaseModel):
+    note_id: int
+
+
+class NoteListDTO(BaseModel):
+    user_id: int
+
+
+class NoteUpdateDTO(BaseModel):
+    note_id: int
+    title: Optional[str] = None
+    content: Optional[str] = None
+
+
+class NoteDeleteDTO(BaseModel):
+    note_id: int
+
+
+class NoteSearchDTO(BaseModel):
+    vector: List[float]
+    top_k: int = 5

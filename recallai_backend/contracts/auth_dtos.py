@@ -1,13 +1,18 @@
-"""
-Auth-related DTOs (contracts) used by the API and service layers.
+# recallai_backend/contracts/auth_dtos.py
 
-Thin wrapper around `recallai_backend.dtos.auth_dtos`.
-"""
+from pydantic import BaseModel
 
-from recallai_backend.dtos.auth_dtos import (
-    RegisterDTO,
-    LoginDTO,
-    UserResponse,
-)
 
-__all__ = ["RegisterDTO", "LoginDTO", "UserResponse"]
+class RegisterDTO(BaseModel):
+    email: str
+    password: str
+
+
+class LoginDTO(BaseModel):
+    email: str
+    password: str
+
+
+class UserResponse(BaseModel):
+    id: int
+    email: str

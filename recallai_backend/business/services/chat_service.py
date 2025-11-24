@@ -66,22 +66,55 @@ class ChatService(IChatService):
         Pure text chat with RAG notes.
         """
 
+        # ⭐ FIXED: Use dto.prompt (matches frontend)
+        user_text = (dto.prompt or "").strip()
+
+        if not user_text:
+            return ChatResponseDTO(
+                answer="I didn’t receive any message.",
+                sources=[]
+            )
+
         # Create or load conversation
         if dto.conversation_id is None:
-            conv = self.repo_conv.create_conversation(dto.user_id, dto.prompt[:50])
+            title = user_text[:50] if user_text else "New conversation"
+            conv = self.repo_conv.create_conversation(dto.user_id, title)
             conversation_id = conv.id
         else:
             conversation_id = dto.conversation_id
 
-        # Save user message
-        self.repo_conv.add_message(conversation_id, "user", dto.prompt)
+        # Save new user message
+        user_msg = self.repo_conv.add_message(conversation_id, "user", user_text)
 
-        # Conversation history
-        history = self.repo_conv.get_messages_paginated(conversation_id, limit=1000, before_id=None)
-        message_history = [{"role": m.role, "content": m.content} for m in history]
+        # Load conversation history (oldest → newest)
+        history = self.repo_conv.get_messages_paginated(
+            conversation_id,
+            limit=1000,
+            before_id=None
+        )
 
+        message_history = [
+            {"role": m.role, "content": m.content}
+            for m in history
+        ]
+
+        # Load history (DESC from repository)
+        history = self.repo_conv.get_messages_paginated(
+            conversation_id,
+            limit=1000,
+            before_id=None
+        )
+
+        # ⭐ FIX: Reverse to ASC for GPT
+        history = list(reversed(history))
+
+        message_history = [
+            {"role": m.role, "content": m.content}
+            for m in history
+        ]
+        
         # RAG notes retrieval
-        query_vec = self.embedding.embed_text(dto.prompt)
+        query_vec = self.embedding.embed_text(user_text)
         notes = self.repo_notes.search_by_vector(query_vec, top_k=dto.top_k)
 
         sources: List[ChatAnswerSource] = []
@@ -89,16 +122,20 @@ class ChatService(IChatService):
 
         for n in notes:
             snippet = n.content[:200] + "..."
-            sources.append(ChatAnswerSource(note_id=n.id, title=n.title, snippet=snippet))
+            sources.append(
+                ChatAnswerSource(note_id=n.id, title=n.title, snippet=snippet)
+            )
             rag_text_blocks.append(f"[NOTE {n.id}]\n{n.content}")
 
+        # System instructions
         system_blocks = [
             {
                 "role": "system",
                 "content": (
-                    "You are RecallAI. You answer using:\n"
+                    "You are RecallAI. You answer based on:\n"
                     "1. User messages\n"
                     "2. Their personal notes (RAG)\n"
+                    "Reply clearly and concisely."
                 ),
             }
         ]
@@ -107,12 +144,13 @@ class ChatService(IChatService):
             system_blocks.append(
                 {
                     "role": "system",
-                    "content": "\n\n--- NOTES CONTEXT ---\n" + "\n\n".join(rag_text_blocks),
+                    "content": "--- NOTES CONTEXT ---\n" + "\n\n".join(rag_text_blocks),
                 }
             )
 
         messages = system_blocks + message_history
 
+        # GPT Response
         completion = client.chat.completions.create(
             model="gpt-4o",
             messages=messages,
@@ -120,9 +158,18 @@ class ChatService(IChatService):
 
         answer = completion.choices[0].message.content
 
-        self.repo_conv.add_message(conversation_id, "assistant", answer)
+        # Save AI message and return its ID to the frontend
+        assistant_msg = self.repo_conv.add_message(
+            conversation_id, "assistant", answer
+        )
 
-        return ChatResponseDTO(answer=answer, sources=sources)
+        return ChatResponseDTO(
+            answer=answer,
+            sources=sources,
+            message_id=assistant_msg.id
+        )
+
+
 
     # ==========================================================
     # FILE + PROMPT CHAT → USED BY /chat/upload endpoint

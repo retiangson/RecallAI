@@ -1,10 +1,4 @@
-"""
-Conversation-related DTOs (contracts).
-
-Moved from inline conversation_controller DTO classes into a proper
-contracts file to maintain clean separation of concerns and match
-the KaiHelper-style DTO structure.
-"""
+# recallai_backend/contracts/conversation_dtos.py
 
 from pydantic import BaseModel
 
@@ -38,14 +32,3 @@ class AddToNoteDTO(BaseModel):
     user_id: int
     content: str
     title: str | None = "Chat Snippet"
-
-
-__all__ = [
-    "UserID",
-    "CreateConvDTO",
-    "ConvID",
-    "RenameDTO",
-    "DeleteDTO",
-    "DeleteMessageDTO",
-    "AddToNoteDTO",
-]

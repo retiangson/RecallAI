@@ -37,6 +37,9 @@ interface Conversation {
 
 export function ChatPage({ user }: { user: { id: number; email: string } }) {
   const TEMP_CONVERSATION_ID = -1;
+
+
+
   const attachmentInputRef = useRef<HTMLInputElement | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversation, setActiveConversation] =
@@ -72,6 +75,8 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
   const [activeNoteMenuData, setActiveNoteMenuData] = useState<{
     type: "note" | "conversation",
@@ -163,26 +168,71 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
   }
 
   async function loadMessages(conversationId: number, loadOlder = false) {
-    const res = await getConversationMessagesPaginated(
+    const res: Message[] = await getConversationMessagesPaginated(
       conversationId,
       10,
-      loadOlder ? (messagesCursor ?? undefined) : undefined
+      loadOlder ? messagesCursor ?? undefined : undefined
     );
 
+    // Always sort oldest → newest
+    const pageAsc = [...res].sort((a, b) => a.id - b.id);
+
+    // FIRST LOAD
     if (!loadOlder) {
-      // first load
-      setActiveConversation((prev) =>
-        prev ? { ...prev, messages: res } : null
+      setActiveConversation(prev =>
+        prev ? { ...prev, messages: pageAsc } : null
       );
-    } else {
-      // loading older
-      setActiveConversation((prev) =>
-        prev ? { ...prev, messages: [...res, ...prev.messages] } : null
-      );
+
+      // Cursor = oldest in page
+      if (pageAsc.length > 0) {
+        setMessagesCursor(pageAsc[0].id);
+      }
+
+      // Auto-scroll to bottom ONLY FIRST TIME
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "auto" });
+      });
+
+      return;
     }
 
-    if (res.length > 0) {
-      setMessagesCursor(res[0].id);
+    /*
+    * LOAD OLDER — PREPEND + PRESERVE SCROLL PERFECTLY
+    */
+
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    // Record BEFORE sizes
+    const prevScrollTop = container.scrollTop;
+    const prevScrollHeight = container.scrollHeight;
+
+    setActiveConversation(prev => {
+      if (!prev) return null;
+
+      const existingIds = new Set(prev.messages.map(m => m.id));
+      const newMessages = pageAsc.filter(m => !existingIds.has(m.id));
+
+      // PREPEND new (older) messages
+      return {
+        ...prev,
+        messages: [...newMessages, ...prev.messages]
+      };
+    });
+
+    // AFTER DOM updates
+    requestAnimationFrame(() => {
+      const newScrollHeight = container.scrollHeight;
+
+      // ⭐ Correct formula:
+      const diff = newScrollHeight - prevScrollHeight;
+
+      container.scrollTop = prevScrollTop + diff;
+    });
+
+    // Update cursor
+    if (pageAsc.length > 0) {
+      setMessagesCursor(pageAsc[0].id);
     }
   }
 
@@ -215,11 +265,6 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
       window.removeEventListener("mouseup", handleMouseUp);
     };
   }, []);
-
-  /* Auto-scroll */
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [activeConversation?.messages, loading]);
 
   useEffect(() => {
     if (!selectedNote) {
@@ -419,6 +464,10 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
           const filtered = prev.filter((c) => c.id !== updated.id);
           return [updated, ...filtered];
         });
+
+        setTimeout(() => {
+          bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+        }, 50);
       } else if (hasText) {
         const res = await sendChat(conversationId, trimmed);
 
@@ -438,6 +487,10 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
           const filtered = prev.filter((c) => c.id !== updated.id);
           return [updated, ...filtered];
         });
+
+        setTimeout(() => {
+          bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+        }, 50);
       }
     } finally {
       setLoading(false);
@@ -549,6 +602,14 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
     }
   }
 
+  function handleMessagesScroll(e: React.UIEvent<HTMLDivElement>) {
+    const target = e.currentTarget;
+
+    // If the user scrolled close to the top, load older messages
+    if (target.scrollTop < 120 && activeConversation) {
+      loadMessages(activeConversation.id, true);
+    }
+  }
 
   async function handleDeleteMessage(messageId: number, index: number) {
     if (!activeConversation) return;
@@ -776,9 +837,18 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
                 {conversations.map((conv) => (
                   <div key={conv.id} className="relative">
                     <div
-                      onClick={() => {
+                      onClick={async () => {
                         setActiveConversation(conv);
-                        loadMessages(conv.id);
+
+                        // Load last page of messages
+                        await loadMessages(conv.id, false);
+
+                        // ⭐ Scroll AFTER React finishes updating the DOM
+                        requestAnimationFrame(() => {
+                          requestAnimationFrame(() => {
+                            bottomRef.current?.scrollIntoView({ behavior: "auto" });
+                          });
+                        });
                       }}
                       className={`
                         rounded cursor-pointer transition flex justify-between items-center
@@ -851,7 +921,9 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
           <div className="h-full flex gap-4">
             {/* Messages column */}
             <div
+              ref={messagesContainerRef}   // ⭐ REQUIRED
               className="flex-1 min-w-0 overflow-y-auto"
+              onScroll={handleMessagesScroll}
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDropFile}
             >

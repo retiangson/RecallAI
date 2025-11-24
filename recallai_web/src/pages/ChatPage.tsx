@@ -40,7 +40,13 @@ interface Conversation {
 export function ChatPage({ user }: { user: { id: number; email: string } }) {
   const TEMP_CONVERSATION_ID = -1;
 
+  const [chatModel, setChatModel] = useState(
+    localStorage.getItem("chatModel") || "gpt-4o-mini"
+  );
 
+  const [embedModel, setEmbedModel] = useState(
+    localStorage.getItem("embedModel") || "text-embedding-3-small"
+  );
 
   const attachmentInputRef = useRef<HTMLInputElement | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -422,7 +428,6 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
 
       // 2. Build user message content (include attachments label if any)
       let userContent = trimmed;
-      debugger;
       if (hasFiles) {
         const filesLabel = pendingFiles
           .map((f) => `📎 ${f.name}`)

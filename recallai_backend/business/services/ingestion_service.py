@@ -5,7 +5,7 @@ from typing import List
 from dataclasses import dataclass
 from sqlalchemy.orm import Session
 
-from recallai_backend.services.embedding_service import EmbeddingService
+from recallai_backend.business.services.embedding_service import EmbeddingService
 from recallai_backend.domain.repositories.note_repository import NoteRepository
 from recallai_backend.dtos.note_dtos import NoteCreateDTO
 

@@ -1,13 +1,11 @@
-# recallai_backend/contracts/__init__.py
+"""
+DTO (contract) definitions for the RecallAI backend.
 
-from .auth_dtos import RegisterDTO, LoginDTO, UserResponse
-from .chat_dtos import ChatRequestDTO, ChatResponseDTO, ChatAnswerSource, ChatAttachmentDTO, DeleteMessageDTO
-from .note_dtos import (
-    NoteCreateDTO,
-    NoteResponseDTO,
-    NoteGetDTO,
-    NoteListDTO,
-    NoteUpdateDTO,
-    NoteDeleteDTO,
-    NoteSearchDTO,
-)
+These modules re-export the existing DTOs from `recallai_backend.dtos`
+so that the layout matches the KaiHelper `contracts` package,
+without modifying any DTO logic.
+"""
+
+from .auth_dtos import *  # noqa: F401,F403
+from .chat_dtos import *  # noqa: F401,F403
+from .note_dtos import *  # noqa: F401,F403

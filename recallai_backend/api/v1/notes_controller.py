@@ -1,95 +1,50 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from recallai_backend.core.dependencies import get_db, get_embedding_service
+from fastapi import APIRouter
 
-from recallai_backend.dtos.note_dtos import (
-    NoteCreateDTO, 
-    NoteUpdateDTO, 
-    NoteDeleteDTO,
+from recallai_backend.bootstrap import container
+from recallai_backend.contracts.note_dtos import (
+    NoteCreateDTO,
     NoteGetDTO,
     NoteListDTO,
+    NoteUpdateDTO,
+    NoteDeleteDTO,
     NoteSearchDTO,
-    NoteResponseDTO
+    NoteResponseDTO,
 )
-
-from recallai_backend.services.note_service import NoteService
 
 router = APIRouter(prefix="/notes", tags=["notes"])
 
 
-# ─────────────────────────────────────────────
-# CREATE NOTE
-# ─────────────────────────────────────────────
 @router.post("", response_model=NoteResponseDTO)
-def create_note(
-    dto: NoteCreateDTO,
-    db: Session = Depends(get_db),
-    emb = Depends(get_embedding_service),
-):
-    service = NoteService(db, emb)
+def create_note(dto: NoteCreateDTO):
+    service = container.get_note_service()
     return service.create_note(dto)
 
 
-# ─────────────────────────────────────────────
-# GET NOTE BY ID
-# ─────────────────────────────────────────────
 @router.post("/get", response_model=NoteResponseDTO | None)
-def get_note(
-    dto: NoteGetDTO,
-    db: Session = Depends(get_db),
-    emb = Depends(get_embedding_service)
-):
-    service = NoteService(db, emb)
+def get_note(dto: NoteGetDTO):
+    service = container.get_note_service()
     return service.get_note(dto.note_id)
 
 
-# ─────────────────────────────────────────────
-# LIST NOTES FOR USER
-# ─────────────────────────────────────────────
 @router.post("/list")
-def list_notes(
-    dto: NoteListDTO,
-    db: Session = Depends(get_db),
-    emb = Depends(get_embedding_service)
-):
-    service = NoteService(db, emb)
+def list_notes(dto: NoteListDTO):
+    service = container.get_note_service()
     return service.list_notes(dto.user_id)
 
 
-# ─────────────────────────────────────────────
-# UPDATE NOTE
-# ─────────────────────────────────────────────
 @router.post("/update", response_model=NoteResponseDTO | None)
-def update_note(
-    dto: NoteUpdateDTO,
-    db: Session = Depends(get_db),
-    emb = Depends(get_embedding_service)
-):
-    service = NoteService(db, emb)
+def update_note(dto: NoteUpdateDTO):
+    service = container.get_note_service()
     return service.update_note(dto)
 
 
-# ─────────────────────────────────────────────
-# DELETE NOTE
-# ─────────────────────────────────────────────
 @router.post("/delete")
-def delete_note(
-    dto: NoteDeleteDTO,
-    db: Session = Depends(get_db),
-    emb = Depends(get_embedding_service)
-):
-    service = NoteService(db, emb)
+def delete_note(dto: NoteDeleteDTO):
+    service = container.get_note_service()
     return service.delete_note(dto.note_id)
 
 
-# ─────────────────────────────────────────────
-# VECTOR SEARCH
-# ─────────────────────────────────────────────
 @router.post("/search")
-def search_notes(
-    dto: NoteSearchDTO,
-    db: Session = Depends(get_db),
-    emb = Depends(get_embedding_service)
-):
-    service = NoteService(db, emb)
+def search_notes(dto: NoteSearchDTO):
+    service = container.get_note_service()
     return service.search_notes(dto.vector, dto.top_k)

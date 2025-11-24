@@ -1,16 +1,13 @@
-from pydantic import BaseModel
+"""
+Auth-related DTOs (contracts) used by the API and service layers.
 
+Thin wrapper around `recallai_backend.dtos.auth_dtos`.
+"""
 
-class RegisterDTO(BaseModel):
-    email: str
-    password: str
+from recallai_backend.dtos.auth_dtos import (
+    RegisterDTO,
+    LoginDTO,
+    UserResponse,
+)
 
-
-class LoginDTO(BaseModel):
-    email: str
-    password: str
-
-
-class UserResponse(BaseModel):
-    id: int
-    email: str
+__all__ = ["RegisterDTO", "LoginDTO", "UserResponse"]

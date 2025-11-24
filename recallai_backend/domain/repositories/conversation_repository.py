@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session, joinedload
+from traitlets import List
 from recallai_backend.domain.models.conversation import Conversation
 from recallai_backend.domain.models.message import Message
 
@@ -29,7 +30,7 @@ class ConversationRepository:
     # ─────────────────────────────────────────────
     # Get messages of a conversation
     # ─────────────────────────────────────────────
-    def get_messages(self, conv_id: int):
+    def get_messages(self, conv_id: int) -> List[Message]:
         return (
             self.db.query(Message)
             .filter(Message.conversation_id == conv_id)

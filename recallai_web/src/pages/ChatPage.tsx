@@ -47,6 +47,9 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
 
   const [messagesLimit] = useState(10);
   const [messagesCursor, setMessagesCursor] = useState<number | null>(null);
+  
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number, content: string, index: number } | null>(null);
 
   const [notes, setNotes] = useState<any[]>([]);
 
@@ -165,7 +168,7 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
       10,
       loadOlder ? (messagesCursor ?? undefined) : undefined
     );
-    
+
     if (!loadOlder) {
       // first load
       setActiveConversation((prev) =>
@@ -494,6 +497,40 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
     });
   }
 
+  async function handleAddToNotesAndDelete() {
+    if (!deleteTarget) return;
+
+    // Add to notes
+    await handleAddMessageToNotes(deleteTarget.content);
+
+    // Delete the message
+    await deleteMessage(deleteTarget.id);
+
+    // update UI
+    setActiveConversation(prev =>
+      prev
+        ? { ...prev, messages: prev.messages.filter((_, i) => i !== deleteTarget.index) }
+        : prev
+    );
+
+    setShowDeleteModal(false);
+  }
+
+  async function handleFinalDelete() {
+    if (!deleteTarget) return;
+
+    await deleteMessage(deleteTarget.id);
+
+    // update UI
+    setActiveConversation(prev =>
+      prev
+        ? { ...prev, messages: prev.messages.filter((_, i) => i !== deleteTarget.index) }
+        : prev
+    );
+
+    setShowDeleteModal(false);
+  }
+
   function handleAddToNotes(conv: Conversation) {
     alert("Add to Notes feature coming soon!");
   }
@@ -530,6 +567,11 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
       ...activeConversation,
       messages: updatedMessages,
     });
+  }
+
+  function openDeleteModal(id: number, content: string, index: number) {
+    setDeleteTarget({ id, content, index });
+    setShowDeleteModal(true);
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -820,7 +862,7 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
                     role={msg.role}
                     content={msg.content}
                     onAdd={() => handleAddMessageToNotes(msg.content)}
-                    onDelete={() => handleDeleteMessage(msg.id, idx)}
+                    onDelete={() => openDeleteModal(msg.id, msg.content, idx)}
                   />
                 ))}
 
@@ -1023,6 +1065,45 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
           </div>
         </footer>
       </div>
+      {showDeleteModal && deleteTarget && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-[#1f1f1f] p-5 rounded-xl w-80 shadow-xl text-white">
+            <h3 className="text-lg font-semibold mb-3">Delete Message</h3>
+
+            <p className="text-sm mb-4 text-gray-300">
+              What would you like to do with this message?
+            </p>
+
+            <div className="space-y-3">
+
+              {/* Add to Notes & Delete */}
+              <button
+                className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded-lg"
+                onClick={() => handleAddToNotesAndDelete()}
+              >
+                📒 Add to Notes & Delete
+              </button>
+
+              {/* Delete Only */}
+              <button
+                className="w-full bg-red-600 hover:bg-red-700 py-2 rounded-lg"
+                onClick={() => handleFinalDelete()}
+              >
+                🗑 Delete Only
+              </button>
+
+              {/* Cancel */}
+              <button
+                className="w-full bg-gray-600 hover:bg-gray-700 py-2 rounded-lg"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                Cancel
+              </button>
+
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

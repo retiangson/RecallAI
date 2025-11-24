@@ -20,6 +20,8 @@ import {
   getConversationMessagesPaginated,
 } from "../api/conversationApi";
 import ChatBubble from "../components/ChatBubble";
+import NoteToolbar from "../components/NoteToolbar";
+import MarkdownRenderer from "../components/MarkdownRenderer";
 
 type MessageRole = "user" | "assistant";
 
@@ -72,6 +74,7 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
   const [notePanelWidth, setNotePanelWidth] = useState(380); // px
   const isResizingNotePanel = useRef(false);
   const layoutRef = useRef<HTMLDivElement | null>(null);
+  const [noteTab, setNoteTab] = useState<"raw" | "formatted">("raw");
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -970,21 +973,104 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
                     className="w-full bg-transparent border-b border-[#374151] pb-2 mb-4 text-sm text-blue-100 focus:outline-none focus:border-blue-500"
                   />
 
-                  {/* Note content */}
-                  <textarea
-                    value={noteContentDraft}
-                    onChange={(e) => {
-                      setNoteContentDraft(e.target.value);
-                    }}
-                    className="flex-1 w-full bg-transparent text-sm text-gray-100 resize-none focus:outline-none rounded-md p-2 border border-[#374151]"
-                    placeholder="Write your note here..."
-                  />
+                  {/* ⭐ TAB SELECTOR */}
+                  <div className="flex gap-2 border-b border-[#374151] mb-3">
+                    <button
+                      onClick={() => setNoteTab("raw")}
+                      className={`px-3 py-1 text-sm rounded-t-md ${
+                        noteTab === "raw"
+                          ? "bg-[#2A2C2F] text-white"
+                          : "text-gray-400 hover:text-white"
+                      }`}
+                    >
+                      Raw
+                    </button>
+                    <button
+                      onClick={() => setNoteTab("formatted")}
+                      className={`px-3 py-1 text-sm rounded-t-md ${
+                        noteTab === "formatted"
+                          ? "bg-[#2A2C2F] text-white"
+                          : "text-gray-400 hover:text-white"
+                      }`}
+                    >
+                      Formatted
+                    </button>
+                  </div>
+
+                  {/* ⭐ RAW MODE (with toolbar + textarea) */}
+                  {noteTab === "raw" && (
+                    <>
+                      <NoteToolbar
+                        onFormat={(type) => {
+                          let text = noteContentDraft;
+                          let out = text;
+
+                          switch (type) {
+                            case "bold":
+                              out = text + "**bold text**";
+                              break;
+                            case "italic":
+                              out = text + "_italic text_";
+                              break;
+                            case "h1":
+                              out = text + "\n\n# Heading 1\n";
+                              break;
+                            case "h2":
+                              out = text + "\n\n## Heading 2\n";
+                              break;
+                            case "bullet":
+                              out = text + "\n- item 1\n- item 2\n";
+                              break;
+                            case "number":
+                              out = text + "\n1. First\n2. Second\n";
+                              break;
+                            case "quote":
+                              out = text + "\n> Quote text\n";
+                              break;
+                            case "code":
+                              out = text + "\n```\ncode here\n```\n";
+                              break;
+                            case "inlinecode":
+                              out = text + " `inline code` ";
+                              break;
+                            case "math":
+                              out = text + "\n$$ a^2 + b^2 = c^2 $$\n";
+                              break;
+                            case "clear":
+                              out = "";
+                              break;
+                          }
+
+                          setNoteContentDraft(out);
+                          setIsNoteDirty(true);
+                        }}
+                      />
+
+                      <textarea
+                        value={noteContentDraft}
+                        onChange={(e) => {
+                          setNoteContentDraft(e.target.value);
+                          setIsNoteDirty(true);
+                        }}
+                        className="flex-1 w-full bg-transparent text-sm text-gray-100 resize-none focus:outline-none rounded-md p-2 border border-[#374151]"
+                        placeholder="Write your note here with markdown..."
+                      />
+                    </>
+                  )}
+
+                  {/* ⭐ FORMATTED MODE (MarkdownRenderer preview) */}
+                  {noteTab === "formatted" && (
+                    <div className="flex-1 overflow-auto border border-[#374151] rounded-md p-3 bg-[#0f0f0f]">
+                      <MarkdownRenderer>{noteContentDraft}</MarkdownRenderer>
+                    </div>
+                  )}
 
                   {/* Footer buttons */}
                   <div className="mt-4 flex justify-between items-center">
                     <span className="text-xs text-gray-500">
                       {isNoteDirty ? "Unsaved changes" : "Up to date"}
                     </span>
+
                     <div className="flex gap-2">
                       <button
                         onClick={handleDiscardNoteChanges}
@@ -993,6 +1079,7 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
                       >
                         Discard
                       </button>
+
                       <button
                         onClick={handleSaveNote}
                         disabled={!isNoteDirty}
@@ -1003,6 +1090,7 @@ export function ChatPage({ user }: { user: { id: number; email: string } }) {
                     </div>
                   </div>
                 </div>
+
               </>
             )}
           </div>
